@@ -642,7 +642,7 @@ class FourierTransformer2D(nn.Layer):
         self._initialize()
         self.__name__ = self.attention_type.capitalize() + 'Transformer2D'
 
-    def pre_process(self, node):
+    def pre_process(self, x):
         """
         Args:
             x: input coordinates
@@ -656,7 +656,7 @@ class FourierTransformer2D(nn.Layer):
         gridy = paddle.linspace(0, 1, size_y, dtype=paddle.float32)
         gridy = gridy.reshape((1, 1, size_y, 1)).tile([batchsize, size_x, 1, 1])
         grid = paddle.concat((gridx, gridy), axis=-1)
-        return node.transpose((0, 2, 3, 1)), grid
+        return x.transpose((0, 2, 3, 1)), grid
 
     def forward(self, node, weight=None):
         '''
@@ -716,7 +716,7 @@ class FourierTransformer2D(nn.Layer):
         if self.normalizer:
             x = self.normalizer.inverse_transform(x)
 
-        return x
+        return x.transpose((0, 3, 1, 2))
 
     def _initialize(self):
         self._get_feature()
@@ -826,34 +826,34 @@ class FourierTransformer2D(nn.Layer):
 
 
 if __name__ == '__main__':
-    Q = paddle.ones([10, 100, 512])
-    K = paddle.ones([10, 100, 512])
-    V = paddle.ones([10, 100, 512])
-
-    out, _ = vanilla_attention(Q, K, V)
-
-    print(out)
-
-    out, _ = linear_attention(Q, K, V)
-    print(out)
-
-    layer = SimpleAttention(n_head=8, d_model=512, attention_type='galerkin', norm_type='instance', norm_add=True)
-    y, _ = layer(Q, K, V)
-
-    Postional = PositionalEncoding(d_model=512)
-    x = y.transpose((1, 0, 2))
-    y = Postional(x)
-    y = y.transpose((1, 0, 2))
-
-    EncoderLayer = SimpleTransformerEncoderLayer(d_model=512)
-    x = paddle.ones([10, 100, 512])
-    out = EncoderLayer(x)
-    print(out)
-
-    layer = PointwiseRegressor(in_dim=5, out_dim=3, n_hidden=128)
-    x = paddle.ones([10, 64, 64, 5], dtype=paddle.float32)
-    x = layer(x)
-    print(x.shape)
+    # Q = paddle.ones([10, 100, 512])
+    # K = paddle.ones([10, 100, 512])
+    # V = paddle.ones([10, 100, 512])
+    #
+    # out, _ = vanilla_attention(Q, K, V)
+    #
+    # print(out)
+    #
+    # out, _ = linear_attention(Q, K, V)
+    # print(out)
+    #
+    # layer = SimpleAttention(n_head=8, d_model=512, attention_type='galerkin', norm_type='instance', norm_add=True)
+    # y, _ = layer(Q, K, V)
+    #
+    # Postional = PositionalEncoding(d_model=512)
+    # x = y.transpose((1, 0, 2))
+    # y = Postional(x)
+    # y = y.transpose((1, 0, 2))
+    #
+    # EncoderLayer = SimpleTransformerEncoderLayer(d_model=512)
+    # x = paddle.ones([10, 100, 512])
+    # out = EncoderLayer(x)
+    # print(out)
+    #
+    # layer = PointwiseRegressor(in_dim=5, out_dim=3, n_hidden=128)
+    # x = paddle.ones([10, 64, 64, 5], dtype=paddle.float32)
+    # x = layer(x)
+    # print(x.shape)
 
     import yaml
 

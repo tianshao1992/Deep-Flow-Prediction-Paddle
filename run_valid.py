@@ -14,28 +14,45 @@ import paddle.nn as nn
 from paddle.io import DataLoader
 
 from read_data import TurbDataset
-from net_model import TurbNetG
+from Unet_model import UNet2d
+from FNO_model import FNO2d
+from Trans_model import FourierTransformer2D
 import utils
 from utils import log
 
-suffix = ""  # customize loading & output if necessary
-prefix = ""
-if len(sys.argv) > 1:
-    prefix = sys.argv[1]
-    print("Output prefix: {}".format(prefix))
-
+dropout = 0.0
+prop = [10000, 0.75, 0, 0.25]
+net = 'UNet'
 expo = 5
-data_path = os.path.join('H:\\', 'PythonProject', 'Deep-Flow-Prediction', 'data')
-train_path = os.path.join(data_path, 'train\\')
-valid_path = os.path.join(data_path, 'test\\')
-dataset = TurbDataset(None, mode=TurbDataset.TEST, dataDir=train_path, dataDirTest=valid_path)
+##########################
+
+work_path = os.path.join('work', net, str(prop))
+data_path = os.path.join('data')
+
+suffix = ""  # customize loading & output if necessary
+prefix = work_path + '-expo-' + str(expo) + "/"
+print("Output prefix: {}".format(prefix))
+
+train_path = os.path.join(data_path, 'train/')
+valid_path = os.path.join(data_path, 'test/')
+dataset = TurbDataset(prop, mode=TurbDataset.TEST, dataDir=train_path, dataDirTest=valid_path)
 # dataset = TurbDataset(None, mode=TurbDataset.TEST, dataDirTest="../data/test/")
 testLoader = DataLoader(dataset, batch_size=1, shuffle=False)
 
-netG = TurbNetG(channelExponent=expo)
-lf = "./" + prefix + "testout{}.txt".format(suffix)
-utils.makeDirs(["results_test"])
+if 'UNet' in net:
+    net_model = UNet2d(channelExponent=expo, dropout=dropout)
+elif 'FNO' in net:
+    net_model = FNO2d(in_dim=3, out_dim=3, modes=(32, 32), width=32, depth=4, steps=1, padding=4, activation='gelu')
+elif 'Transformer' in net:
+    import yaml
 
+    with open(os.path.join('transformer_config.yml')) as f:
+        config = yaml.full_load(f)
+    config = config['Transformer']
+    net_model = FourierTransformer2D(**config)
+lf = prefix + "testout{}.txt".format(suffix)
+utils.makeDirs([prefix + "results_test"])
+utils.resetLog(lf)
 # loop over different trained models
 avgLoss = 0.
 losses = []
@@ -45,13 +62,13 @@ for si in range(25):
     s = chr(96 + si)
     if (si == 0):
         s = ""  # check modelG, and modelG + char
-    modelFn = "./" + prefix + "modelG{}{}".format(suffix, s)
+    modelFn = "./" + prefix + "net_model{}{}".format(suffix, s)
     if not os.path.isfile(modelFn):
         continue
 
     models.append(modelFn)
     log(lf, "Loading " + modelFn)
-    netG.set_state_dict(paddle.load(modelFn))
+    net_model.set_state_dict(paddle.load(modelFn))
     log(lf, "Loaded " + modelFn)
     # netG.cuda()
 
@@ -63,12 +80,12 @@ for si in range(25):
     lossPer_v_accum = 0
     lossPer_accum = 0
 
-    netG.eval()
+    net_model.eval()
 
     for i, data in enumerate(testLoader, 0):
         inputs, targets = data
-
-        outputs = netG(inputs)
+        with paddle.no_grad():
+            outputs = net_model(inputs)
         outputs = outputs[0]
         targets = targets[0]
 
@@ -121,9 +138,10 @@ for si in range(25):
         L1val_dn_accum += lossL1_dn.item()
 
         # write output image, note - this is currently overwritten for multiple models
-        os.chdir("./results_test/")
-        utils.imageOut("%04d" % (i), outputs, targets, normalize=False, saveMontage=True)  # write normalized with error
-        os.chdir("../")
+
+        utils.imageOut(prefix + "results_test/" + "%04d" % (i), outputs, targets, normalize=False,
+                       saveMontage=True)  # write normalized with error
+        # os.chdir("../")
 
     log(lf, "\n")
     L1val_accum /= len(testLoader)

@@ -25,7 +25,7 @@ import utils
 # number of training iterations
 iterations = 100000
 # batch size
-batch_size = 20
+batch_size = 10
 # learning rate, generator
 lrG = 0.0005
 # decay learning rate?
@@ -34,15 +34,15 @@ decayLr = True
 expo = 5
 # data set config
 # prop = None  # by default, use all from "../data/train"
-prop = [1000, 0.75, 0, 0.25]  # mix data from multiple directories
+prop = [10000, 0.75, 0, 0.25]  # mix data from multiple directories
 # save txt files with per epoch loss?
-saveL1 = False
+saveL1 = True
 # model type
-net = 'FNO'
+net = 'UNet'
 
 ##########################
 
-work_path = os.path.join('work', str(prop))
+work_path = os.path.join('work', net, str(prop))
 data_path = os.path.join('data')
 
 prefix = work_path + '-expo-' + str(expo) + "/"
@@ -50,7 +50,7 @@ print("Output prefix: {}".format(prefix))
 
 dropout = 0.  # note, the original runs from https://arxiv.org/abs/1810.08217 used slight dropout, but the effect is minimal; conv layers "shouldn't need" dropout, hence set to 0 here.
 doLoad = ""  # optional, path to pre-trained model
-
+print("net: {}".format(net))
 print("LR: {}".format(lrG))
 print("LR decay: {}".format(decayLr))
 print("Iterations: {}".format(iterations))
@@ -67,8 +67,8 @@ paddle.seed(seed)
 # torch.backends.cudnn.deterministic=True # warning, slower
 
 # create pytorch data object with dfp dataset
-train_path = os.path.join(data_path, 'train\\')
-valid_path = os.path.join(data_path, 'test\\')
+train_path = os.path.join(data_path, 'train/')
+valid_path = os.path.join(data_path, 'test/')
 data = read_data.TurbDataset(prop, shuffle=1, dataDir=train_path, dataDirTest=valid_path)
 trainLoader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True)
 print("Training batches: {}".format(len(trainLoader)))
@@ -81,7 +81,7 @@ epochs = int(iterations / len(trainLoader) + 0.5)
 if 'UNet' in net:
     net_model = UNet2d(channelExponent=expo, dropout=dropout)
 elif 'FNO' in net:
-    net_model = FNO2d(in_dim=3, out_dim=3, modes=(16, 16), width=32, depth=4, steps=1, padding=3, activation='gelu')
+    net_model = FNO2d(in_dim=3, out_dim=3, modes=(32, 32), width=32, depth=4, steps=1, padding=4, activation='gelu')
 elif 'Transformer' in net:
     import yaml
 
@@ -128,19 +128,17 @@ for epoch in range(epochs):
         lossL1viz = lossL1.item()
         L1_accum += lossL1viz
 
-        if i == len(trainLoader) - 1:
-            logline = "Epoch: {}, batch-idx: {}, L1: {}\n".format(epoch, i, lossL1viz)
-            print(logline)
+
 
     # validation
     net_model.eval()
     L1val_accum = 0.0
     for i, validata in enumerate(validLoader, 0):
         inputs, targets = validata
-
-        outputs = net_model(inputs)
-        lossL1 = criterionL1(outputs, targets)
-        L1val_accum += lossL1.item()
+        with paddle.no_grad():
+            outputs = net_model(inputs)
+            lossL1 = criterionL1(outputs, targets)
+            L1val_accum += lossL1.item()
 
     if epoch % 10 == 0:
         input_ndarray = inputs.numpy()[0]
@@ -163,4 +161,7 @@ for epoch in range(epochs):
         utils.log(prefix + "L1.txt", "{} ".format(L1_accum), False)
         utils.log(prefix + "L1val.txt", "{} ".format(L1val_accum), False)
 
-paddle.save(net_model.state_dict(), prefix + "modelG")
+    logline = "Epoch: {}, batch-idx: {}, L1: {}, L1_val {}\n".format(epoch, i, L1_accum, L1val_accum)
+    print(logline)
+
+paddle.save(net_model.state_dict(), prefix + "net_model")
