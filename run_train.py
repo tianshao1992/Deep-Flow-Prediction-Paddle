@@ -14,34 +14,39 @@ import paddle.nn as nn
 from paddle.io import DataLoader
 import paddle.optimizer as optim
 
-from net_model import TurbNetG
+from Unet_model import UNet2d
+from FNO_model import FNO2d
+from Trans_model import FourierTransformer2D
 import read_data
 import utils
 
 ######## Settings ########
 
 # number of training iterations
-iterations = 10000
+iterations = 100000
 # batch size
-batch_size = 100
+batch_size = 20
 # learning rate, generator
-lrG = 0.0006
+lrG = 0.0005
 # decay learning rate?
 decayLr = True
 # channel exponent to control network size
 expo = 5
 # data set config
-prop = None  # by default, use all from "../data/train"
-# prop=[1000,0.75,0,0.25] # mix data from multiple directories
+# prop = None  # by default, use all from "../data/train"
+prop = [1000, 0.75, 0, 0.25]  # mix data from multiple directories
 # save txt files with per epoch loss?
 saveL1 = False
+# model type
+net = 'FNO'
 
 ##########################
 
-prefix = ""
-if len(sys.argv) > 1:
-    prefix = sys.argv[1]
-    print("Output prefix: {}".format(prefix))
+work_path = os.path.join('work', str(prop))
+data_path = os.path.join('data')
+
+prefix = work_path + '-expo-' + str(expo) + "/"
+print("Output prefix: {}".format(prefix))
 
 dropout = 0.  # note, the original runs from https://arxiv.org/abs/1810.08217 used slight dropout, but the effect is minimal; conv layers "shouldn't need" dropout, hence set to 0 here.
 doLoad = ""  # optional, path to pre-trained model
@@ -62,7 +67,6 @@ paddle.seed(seed)
 # torch.backends.cudnn.deterministic=True # warning, slower
 
 # create pytorch data object with dfp dataset
-data_path = os.path.join('H:\\', 'PythonProject', 'Deep-Flow-Prediction', 'data')
 train_path = os.path.join(data_path, 'train\\')
 valid_path = os.path.join(data_path, 'test\\')
 data = read_data.TurbDataset(prop, shuffle=1, dataDir=train_path, dataDirTest=valid_path)
@@ -74,30 +78,36 @@ print("Validation batches: {}".format(len(validLoader)))
 
 # setup training
 epochs = int(iterations / len(trainLoader) + 0.5)
-netG = TurbNetG(channelExponent=expo, dropout=dropout)
-print(netG)  # print full net
-model_parameters = filter(lambda p: ~p.stop_gradient, netG.parameters())
+if 'UNet' in net:
+    net_model = UNet2d(channelExponent=expo, dropout=dropout)
+elif 'FNO' in net:
+    net_model = FNO2d(in_dim=3, out_dim=3, modes=(16, 16), width=32, depth=4, steps=1, padding=3, activation='gelu')
+elif 'Transformer' in net:
+    import yaml
+
+    with open(os.path.join('transformer_config.yml')) as f:
+        config = yaml.full_load(f)
+    config = config['Transformer']
+    net_model = FourierTransformer2D(**config)
+
+print(net_model)  # print full net
+model_parameters = filter(lambda p: ~p.stop_gradient, net_model.parameters())
 params = sum([np.prod(p.shape) for p in model_parameters])
 print("Initialized TurbNet with {} trainable params ".format(params))
 
 if len(doLoad) > 0:
-    netG.load_state_dict(paddle.load(doLoad))
+    net_model.load_state_dict(paddle.load(doLoad))
     print("Loaded model " + doLoad)
 
 criterionL1 = nn.L1Loss()
-optimizerG = optim.Adam(parameters=netG.parameters(), learning_rate=lrG, beta1=0.5, beta2=0.999, weight_decay=0.0)
-
-# targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
-# inputs  = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
-# targets = targets.cuda()
-# inputs  = inputs.cuda()
+optimizerG = optim.Adam(parameters=net_model.parameters(), learning_rate=lrG, beta1=0.5, beta2=0.999, weight_decay=0.0)
 
 ##########################
 
 for epoch in range(epochs):
     print("Starting epoch {} / {}".format((epoch + 1), epochs))
 
-    netG.train()
+    net_model.train()
     L1_accum = 0.0
     for i, traindata in enumerate(trainLoader, 0):
         inputs, targets = traindata
@@ -108,7 +118,7 @@ for epoch in range(epochs):
             optimizerG.set_lr(currLr)
 
         optimizerG.clear_grad()
-        gen_out = netG(inputs)
+        gen_out = net_model(inputs)
 
         lossL1 = criterionL1(gen_out, targets)
         lossL1.backward()
@@ -118,32 +128,30 @@ for epoch in range(epochs):
         lossL1viz = lossL1.item()
         L1_accum += lossL1viz
 
-        # if i==len(trainLoader)-1:
-        logline = "Epoch: {}, batch-idx: {}, L1: {}\n".format(epoch, i, lossL1viz)
-        print(logline)
+        if i == len(trainLoader) - 1:
+            logline = "Epoch: {}, batch-idx: {}, L1: {}\n".format(epoch, i, lossL1viz)
+            print(logline)
 
     # validation
-    netG.eval()
+    net_model.eval()
     L1val_accum = 0.0
     for i, validata in enumerate(validLoader, 0):
         inputs, targets = validata
-        # targets_cpu, inputs_cpu = targets_cpu.float().cuda(), inputs_cpu.float().cuda()
-        # inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
-        # targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
-        outputs = netG(inputs)
+        outputs = net_model(inputs)
         lossL1 = criterionL1(outputs, targets)
         L1val_accum += lossL1.item()
 
-        if i == 0:
-            input_ndarray = inputs.numpy()[0]
-            v_norm = (np.max(np.abs(input_ndarray[0, :, :])) ** 2 + np.max(np.abs(input_ndarray[1, :, :])) ** 2) ** 0.5
+    if epoch % 10 == 0:
+        input_ndarray = inputs.numpy()[0]
+        v_norm = (np.max(np.abs(input_ndarray[0, :, :])) ** 2 + np.max(np.abs(input_ndarray[1, :, :])) ** 2) ** 0.5
 
-            outputs_denormalized = data.denormalize(outputs.numpy()[0], v_norm)
-            targets_denormalized = data.denormalize(targets.numpy()[0], v_norm)
-            utils.makeDirs(["results_train"])
-            utils.imageOut("results_train/epoch{}_{}".format(epoch, i), outputs_denormalized, targets_denormalized,
-                           saveTargets=True)
+        outputs_denormalized = data.denormalize(outputs.numpy()[0], v_norm)
+        targets_denormalized = data.denormalize(targets.numpy()[0], v_norm)
+        utils.makeDirs([prefix + "results_train"])
+        utils.imageOut(prefix + "results_train/epoch{}_{}".format(epoch, i), outputs_denormalized,
+                       targets_denormalized,
+                       saveTargets=True)
 
     # data for graph plotting
     L1_accum /= len(trainLoader)
@@ -155,4 +163,4 @@ for epoch in range(epochs):
         utils.log(prefix + "L1.txt", "{} ".format(L1_accum), False)
         utils.log(prefix + "L1val.txt", "{} ".format(L1val_accum), False)
 
-paddle.save(netG.state_dict(), prefix + "modelG")
+paddle.save(net_model.state_dict(), prefix + "modelG")

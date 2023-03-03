@@ -6,10 +6,61 @@
 @Site ：utils.py
 @File ：utils.py
 """
+
 import math, re, os
 import numpy as np
 from PIL import Image
 from matplotlib import cm
+import paddle.nn as nn
+
+activation_dict = \
+    {'gelu': nn.GELU(), 'relu': nn.ReLU(), 'tanh': nn.Tanh(), 'leakyrelu': nn.LeakyReLU(0.2), 'elu': nn.ELU()}
+
+
+def calculate_fan_in_and_fan_out(shape):
+    # dimensions = tensor.dim()
+    dimensions = len(shape)
+    if dimensions < 2:
+        raise ValueError("Fan in and fan out can not be computed for tensor with fewer than 2 dimensions")
+
+    num_input_fmaps = shape[1]
+    num_output_fmaps = shape[0]
+    receptive_field_size = 1
+    if dimensions > 2:
+        # math.prod is not always available, accumulate the product manually
+        # we could use functools.reduce but that is not supported by TorchScript
+        for s in shape[2:]:
+            receptive_field_size *= s
+    fan_in = num_input_fmaps * receptive_field_size
+    fan_out = num_output_fmaps * receptive_field_size
+
+    return fan_in, fan_out
+
+
+def params_initial(initialization, shape, scale=1.0, gain=1.0):
+    if initialization == 'constant':
+        Weight = gain * np.ones(shape).astype('float32')
+    elif initialization == 'normal':
+        Weight = gain * np.random.normal(loc=0., scale=scale, size=shape).astype('float32')
+    elif initialization == 'xavier_Glorot_normal':
+        in_dim, out_dim = calculate_fan_in_and_fan_out(shape)
+        Weight = gain * np.random.normal(loc=0., scale=scale, size=shape) / np.sqrt(in_dim).astype('float32')
+    elif initialization == 'xavier_normal':
+        in_dim, out_dim = calculate_fan_in_and_fan_out(shape)
+        std = np.sqrt(2. / (in_dim + out_dim))
+        Weight = gain * np.random.normal(loc=0., scale=std, size=shape).astype('float32')
+    elif initialization == 'uniform':
+        in_dim, out_dim = calculate_fan_in_and_fan_out(shape)
+        a = np.sqrt(1. / in_dim)
+        Weight = gain * np.random.uniform(low=-a, high=a, size=shape).astype('float32')
+    elif initialization == 'xavier_uniform':
+        in_dim, out_dim = calculate_fan_in_and_fan_out(shape)
+        a = np.sqrt(6. / (in_dim + out_dim))
+        Weight = gain * np.random.uniform(low=-a, high=a, size=shape).astype('float32')
+    else:
+        print("initialization error!")
+        exit(1)
+    return Weight
 
 
 # add line to logfiles
@@ -46,8 +97,8 @@ def imageOut(filename, _outputs, _targets, saveTargets=False, normalize=False, s
 
     s = outputs.shape[1]  # should be 128
     if saveMontage:
-        new_im = Image.new('RGB', ((s + 10) * 3, s * 2), color=(255, 255, 255))
-        BW_im = Image.new('RGB', ((s + 10) * 3, s * 3), color=(255, 255, 255))
+        new_im = Image.new('RGB', ((s + 10) * 3, s * 3), color=(255, 255, 255))
+        # BW_im  = Image.new('RGB', ( (s+10)*3, s*3) , color=(255,255,255) )
 
     for i in range(3):
         outputs[i] = np.flipud(outputs[i].transpose())
@@ -75,31 +126,33 @@ def imageOut(filename, _outputs, _targets, saveTargets=False, normalize=False, s
             else:
                 suffix = "_velY"
 
-            im = Image.fromarray(cm.magma(outputs[i], bytes=True))
+            im = Image.fromarray(cm.RdBu_r(outputs[i], bytes=True))
             im = im.resize((512, 512))
             im.save(filename + suffix + "_pred.png")
 
-            im = Image.fromarray(cm.magma(targets[i], bytes=True))
+            im = Image.fromarray(cm.RdBu_r(targets[i], bytes=True))
             if saveTargets:
                 im = im.resize((512, 512))
                 im.save(filename + suffix + "_target.png")
 
         if saveMontage:
-            im = Image.fromarray(cm.magma(targets[i], bytes=True))
+            im = Image.fromarray(cm.RdBu_r(targets[i], bytes=True))
             new_im.paste(im, ((s + 10) * i, s * 0))
-            im = Image.fromarray(cm.magma(outputs[i], bytes=True))
+            im = Image.fromarray(cm.RdBu_r(outputs[i], bytes=True))
             new_im.paste(im, ((s + 10) * i, s * 1))
-
-            im = Image.fromarray(targets[i] * 256.)
-            BW_im.paste(im, ((s + 10) * i, s * 0))
-            im = Image.fromarray(outputs[i] * 256.)
-            BW_im.paste(im, ((s + 10) * i, s * 1))
             imE = Image.fromarray(np.abs(targets[i] - outputs[i]) * 10. * 256.)
-            BW_im.paste(imE, ((s + 10) * i, s * 2))
+            new_im.paste(imE, ((s + 10) * i, s * 2))
+
+            # im = Image.fromarray(targets[i] * 256.)
+            # BW_im.paste(im, ( (s+10)*i, s*0))
+            # im = Image.fromarray(outputs[i] * 256.)
+            # BW_im.paste(im, ( (s+10)*i, s*1))
+            # imE = Image.fromarray( np.abs(targets[i]-outputs[i]) * 10.  * 256. )
+            # BW_im.paste(imE, ( (s+10)*i, s*2))
 
     if saveMontage:
         new_im.save(filename + ".png")
-        BW_im.save(filename + "_bw.png")
+        # BW_im.save( filename + "_bw.png")
 
 
 # save single image
@@ -113,7 +166,7 @@ def saveAsImage(filename, field_param):
     max_value -= min_value
     field /= max_value
 
-    im = Image.fromarray(cm.magma(field, bytes=True))
+    im = Image.fromarray(cm.RdBu_r(field, bytes=True))
     im = im.resize((512, 512))
     im.save(filename)
 
