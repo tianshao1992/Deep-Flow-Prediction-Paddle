@@ -23,7 +23,7 @@ Transformer:
   return_latent: False
   decoder_type: ifft2
   last_activation: True
-  freq_dim: 16
+  freq_dim: 32
   num_regressor_layers: 2
   regressor_activation: gelu
   fourier_modes: 32
