@@ -31,18 +31,18 @@ lrG = 0.0005
 # decay learning rate?
 decayLr = True
 # channel exponent to control network size
-expo = 6
+expo = 7
 # data set config
 # prop = None  # by default, use all from "../data/train"
-prop = [10000, 0.0, 0, 1.0]  # mix data from multiple directories
+prop = [10000, 0.5, 0, 0.5]  # mix data from multiple directories
 # save txt files with per epoch loss?
 saveL1 = True
 # model type
-net = 'UNet'
+net = 'FNO'
 
 ##########################
 
-for p in ((800,)):
+for p in ((400, 800, 1600, 3200, 6400, 12800, 25600, 51200)):
     prop[0] = p
 
     work_path = os.path.join('work', net, str(prop))

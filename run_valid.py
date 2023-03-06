@@ -21,12 +21,12 @@ import utils
 from utils import log
 
 dropout = 0.0
-prop = [10000, 0.0, 0, 1.0]
+prop = [10000, 0.5, 0, 0.5]
 net = 'UNet'
-expo = 6
+expo = 7
 ##########################
-
-for p in ((100, 200, 400, 1600, 3200, 6400, 12800)):
+for p in (400, 800, 1600, 3200, 6400, 12800, 25600, 51200):
+    # for p in ((100, 200, 400, 1600, 3200, 6400, 12800)):
     prop[0] = p
 
     work_path = os.path.join('work', net, str(prop))
