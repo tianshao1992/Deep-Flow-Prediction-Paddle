@@ -13,7 +13,7 @@ import paddle
 import paddle.nn as nn
 from paddle.io import DataLoader
 
-from read_data import TurbDataset
+from read_data import TurbDataset, ValiDataset
 from Unet_model import UNet2d
 from FNO_model import FNO2d
 from Trans_model import FourierTransformer2D
@@ -24,6 +24,7 @@ dropout = 0.0
 prop = [10000, 0.5, 0, 0.5]
 net = 'UNet'
 expo = 7
+
 ##########################
 for p in (400, 800, 1600, 3200, 6400, 12800, 25600, 51200):
     # for p in ((100, 200, 400, 1600, 3200, 6400, 12800)):
@@ -38,6 +39,11 @@ for p in (400, 800, 1600, 3200, 6400, 12800, 25600, 51200):
 
     train_path = os.path.join(data_path, 'train/')
     valid_path = os.path.join(data_path, 'test/')
+
+    dataValidation = ValiDataset(data)
+    validLoader = DataLoader(dataValidation, batch_size=1, shuffle=False, drop_last=True)
+    print("Validation batches: {}".format(len(validLoader)))
+
     dataset = TurbDataset(prop, mode=TurbDataset.TEST, dataDir=train_path, dataDirTest=valid_path)
     # dataset = TurbDataset(None, mode=TurbDataset.TEST, dataDirTest="../data/test/")
     testLoader = DataLoader(dataset, batch_size=1, shuffle=False)

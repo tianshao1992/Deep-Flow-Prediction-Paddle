@@ -91,7 +91,7 @@ def computeLR(i, epochs, minLR, maxLR):
 
 
 # image output
-def imageOut(filename, _outputs, _targets, saveTargets=False, normalize=False, saveMontage=True):
+def imageOut(filename, _outputs, _targets, saveTargets=False, normalize=False, saveMontage=True, cmap=cm.jet):
     outputs = np.copy(_outputs)
     targets = np.copy(_targets)
 
@@ -126,19 +126,19 @@ def imageOut(filename, _outputs, _targets, saveTargets=False, normalize=False, s
             else:
                 suffix = "_velY"
 
-            im = Image.fromarray(cm.RdBu_r(outputs[i], bytes=True))
+            im = Image.fromarray(cmap(outputs[i], bytes=True))
             im = im.resize((512, 512))
             im.save(filename + suffix + "_pred.png")
 
-            im = Image.fromarray(cm.RdBu_r(targets[i], bytes=True))
+            im = Image.fromarray(cmap(targets[i], bytes=True))
             if saveTargets:
                 im = im.resize((512, 512))
                 im.save(filename + suffix + "_target.png")
 
         if saveMontage:
-            im = Image.fromarray(cm.RdBu_r(targets[i], bytes=True))
+            im = Image.fromarray(cmap(targets[i], bytes=True))
             new_im.paste(im, ((s + 10) * i, s * 0))
-            im = Image.fromarray(cm.RdBu_r(outputs[i], bytes=True))
+            im = Image.fromarray(cmap(outputs[i], bytes=True))
             new_im.paste(im, ((s + 10) * i, s * 1))
             imE = Image.fromarray(np.abs(targets[i] - outputs[i]) * 10. * 256.)
             new_im.paste(imE, ((s + 10) * i, s * 2))
@@ -166,7 +166,7 @@ def saveAsImage(filename, field_param):
     max_value -= min_value
     field /= max_value
 
-    im = Image.fromarray(cm.RdBu_r(field, bytes=True))
+    im = Image.fromarray(cm.jet(field, bytes=True))
     im = im.resize((512, 512))
     im.save(filename)
 

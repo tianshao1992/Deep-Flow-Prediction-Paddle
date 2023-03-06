@@ -29,9 +29,9 @@ Transformer:
   fourier_modes: 32
   spacial_dim: 2
   spacial_fc: False
-  dropout: 0.05
+  dropout: 0.0
   encoder_dropout: 0.0
   decoder_dropout: 0.0
-  ffn_dropout: 0.05
+  ffn_dropout: 0.0
   upsample_mode: interp
   downsample_mode: interp
