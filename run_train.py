@@ -24,7 +24,7 @@ import utils
 ######## Settings ########
 
 # number of training iterations
-iterations = 100000
+iterations = 200000
 # batch size
 batch_size = 10
 # learning rate, generator
@@ -32,22 +32,23 @@ lrG = 0.0005
 # decay learning rate?
 decayLr = True
 # channel exponent to control network size
-expo = 7
+expo = 6
 # data set config
 # prop = None  # by default, use all from "../data/train"
-prop = [10000, 0.0, 0, 1.0]  # mix data from multiple directories
+prop = [10000, 1.0, 0, 0.0]  # mix data from multiple directories
 # save txt files with per epoch loss?
 saveL1 = True
 # model type
-net = 'UNet'
+net = 'Transformer'
 # statistics number
 sta_number = 10
 # data path
 data_path = os.path.join('data')
 
 ##########################
-for p in ((100, 200, 400, 1600, 3200, 6400, 12800)):
-    # for p in ((400, 800, 1600, 3200, 6400, 12800, 25600, 51200)):
+# for p in ((100, 200, 400, 1600, 3200, 6400, 12800)):  #for fig.10
+# for p in ((400, 800, 1600, 3200, 6400, 12800, 25600, 51200)):  #for fig.11
+for p in ((400, 3200, 25600)):  # for Transformer and FNO
     prop[0] = p
 
     for s in range(1, sta_number + 1):

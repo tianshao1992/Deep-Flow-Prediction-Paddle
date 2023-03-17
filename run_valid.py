@@ -12,34 +12,33 @@ import numpy as np
 import paddle
 import paddle.nn as nn
 from paddle.io import DataLoader
-
+import read_data
 from read_data import TurbDataset, ValiDataset
 from Unet_model import UNet2d
 from FNO_model import FNO2d
 from Trans_model import FourierTransformer2D
 import utils
 from utils import log
+from matplotlib import cm
 
 dropout = 0.0
-prop = [10000, 0.5, 0, 0.5]
+prop = [10000, 1.0, 0, 0.0]
 net = 'UNet'
-expo = 7
+expo = 6
+# statistics number
+sta_number = 8
 
 ##########################
-for p in (400, 800, 1600, 3200, 6400, 12800, 25600, 51200):
-    # for p in ((100, 200, 400, 1600, 3200, 6400, 12800)):
+for p in (400, 3200, 25600):  # for Transformer and FNO
+    # for p in (400, 800, 1600, 3200, 6400, 12800, 25600, 51200):   #for fig.11
+    # for p in ((100, 200, 400, 1600, 3200, 6400, 12800)):  #for fig.10
     prop[0] = p
 
-    work_path = os.path.join('work', net, str(prop))
     data_path = os.path.join('data')
-
-    suffix = ""  # customize loading & output if necessary
-    prefix = work_path + '-expo-' + str(expo) + "/"
-    print("Output prefix: {}".format(prefix))
-
     train_path = os.path.join(data_path, 'train/')
     valid_path = os.path.join(data_path, 'test/')
 
+    data = read_data.TurbDataset(prop, shuffle=1, dataDir=train_path, dataDirTest=valid_path)
     dataValidation = ValiDataset(data)
     validLoader = DataLoader(dataValidation, batch_size=1, shuffle=False, drop_last=True)
     print("Validation batches: {}".format(len(validLoader)))
@@ -59,19 +58,24 @@ for p in (400, 800, 1600, 3200, 6400, 12800, 25600, 51200):
             config = yaml.full_load(f)
         config = config['Transformer']
         net_model = FourierTransformer2D(**config)
-    lf = prefix + "testout{}.txt".format(suffix)
-    utils.makeDirs([prefix + "results_test"])
-    utils.resetLog(lf)
+
     # loop over different trained models
     avgLoss = 0.
     losses = []
     models = []
 
-    for si in range(25):
-        s = chr(96 + si)
-        if (si == 0):
-            s = ""  # check modelG, and modelG + char
-        modelFn = "./" + prefix + "net_model{}{}".format(suffix, s)
+    for s in range(sta_number):
+        work_path = os.path.join('work', net, "prop-" + str(prop), "expo-" + str(expo), "statistics-" + str(s + 1))
+
+        prefix = work_path + "/"
+        utils.makeDirs([prefix])
+        print("Output prefix: {}".format(prefix))
+
+        lf = os.path.join('work', net, "prop-" + str(prop), "expo-" + str(expo)) + "/testout.txt"
+        utils.makeDirs([prefix + "results_test"])
+        utils.resetLog(lf)
+
+        modelFn = prefix + "net_model"
         if not os.path.isfile(modelFn):
             continue
 
@@ -148,7 +152,7 @@ for p in (400, 800, 1600, 3200, 6400, 12800, 25600, 51200):
 
             # write output image, note - this is currently overwritten for multiple models
             utils.imageOut(prefix + "results_test/" + "%04d" % (i), outputs, targets, normalize=False,
-                           saveMontage=True)  # write normalized with error
+                           saveMontage=True, cmap=cm.RdBu_r)  # write normalized with error
 
         log(lf, "\n")
         L1val_accum /= len(testLoader)
