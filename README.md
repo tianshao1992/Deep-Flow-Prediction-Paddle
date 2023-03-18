@@ -1,4 +1,7 @@
+
+
 # Paddle Hackathon 第4期 科学计算
+
 —— 科学计算方向 51
 
 原文：[Deep Learning Methods for Reynolds-Averaged Navier-Stokes Simulations of Airfoil Flows](http://arxiv.org/abs/1810.08217)
@@ -20,8 +23,9 @@
 
   - 脚本文件包括
 
-    - run_train.py——训练文件，需要进行如下的参数设置：
-    - 
+    - run_train.py——训练文件。
+    - run_valid.py——测试文件。
+    - 训练以及测试需要进行如下的参数设置：
 
     ```python
     ######## Settings ########
@@ -68,13 +72,7 @@
 
     sta_number为将当前训练过程跑若干次，以统计结果均值、方差
 
-  - **fig文件夹**中为原始论文结果相关图片以及作者复现所整理的对应结果，**work文件夹**中为训练过程及中间结果
-
-    - Poisson-1D为3.2.1中算例对应结果文件存放位置，用于绘制Figure2。
-    - Poisson-2D为3.2.2中算例对应结果文件存放位置，用于绘制Figure3。
-    - Brinkman-Forchheimer-1为3.3.1中算例对应结果文件存放位置，用于绘制Figure 6，反问题中预测一个参数。
-    - Brinkman-Forchheimer-2为3.3.1中算例对应结果文件存放位置，用于绘制Figure 7，反问题中预测二个参数。
-    - Buergers-2D为3.4中算力对应结果文件存放位置，用于绘制Figure 10、11、12。
+  - **pics文件夹**中为原始论文结果相关图片以及作者复现所整理的对应结果，**work文件夹**中为训练过程及中间结果
 
   - UNet_model.py 为原文中实现的CNN-based model paddle代码
 
@@ -113,17 +111,23 @@ $$
 1D Possion （对应文章 3.2.1 Figure 2）详细代码见run_3.2.1.py 以及train_3.2.1.sh 设置不同的traning points——Nx_EQs以及权重 $w$ 。（误差带为运行10次求取均值以及方差绘制，以下类似。）
 下表详细展示了采用GPINN对1D Possion问题的预测效果，以及不同权重、不同训练点数量对于GPINN的影响。其中，左侧为本次复现结果，而右侧为论文结果。需要指出，复现的结果中PINNs以及gPINNs均较原始论文更好，其中GPINNs 权重为1.0时效果尤其明显。
 
-
+**复现Fig8**
 
 | 0039                                                         | **086**                                                      | 010                                                          | 017                                                          |
 | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | ![expo=7 jet 086](https://ai-studio-static-online.cdn.bcebos.com/2af2491fb15b40e092b797325cd891ae4b7cff74557a4c35b5181935d010a87f) | ![expo=7 jet 039](https://ai-studio-static-online.cdn.bcebos.com/f34981bca80a418c87945612ad7cee14943cf924b14841a89d84a589e2acbb98) | ![expo=7 jet 010](https://ai-studio-static-online.cdn.bcebos.com/e711b74f088f40b8b677781f60e869ae50623c4e642545a4b850cd6772cfff7d) | ![expo=7 jet 017](https://ai-studio-static-online.cdn.bcebos.com/ea8622a27659453bae52a5a2dce50361da4dc32685d240ebb7b1970567685d84) |
 
+**论文Fig8**
+
 ![Fig8-](https://ai-studio-static-online.cdn.bcebos.com/b36597c14c6641b795530cf9ede6f34243b25c91a44041a48edc03a96bb3a726)
 
-| 1.9m                                                         | 7.7m                                                         | 30.9m                                                        |
-| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| ![expo=6 0079](https://ai-studio-static-online.cdn.bcebos.com/3620853d5146413dab268e600a2707e8b42f77e081344e2ea669e04af3518b9a) | ![expo=6 0079](https://ai-studio-static-online.cdn.bcebos.com/3620853d5146413dab268e600a2707e8b42f77e081344e2ea669e04af3518b9a) | ![expo=7 0079](https://ai-studio-static-online.cdn.bcebos.com/d226539ee467484cbcb3d0af0cae9a9765d2214e60b04308ad0b06f6a78d715d) |
+**复现Fig9**
+
+| 参数量 | 1.9m                                                         | 7.7m                                                         | 30.9m                                                        |
+| ------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| Fig9   | ![expo=7 0079](https://ai-studio-static-online.cdn.bcebos.com/d226539ee467484cbcb3d0af0cae9a9765d2214e60b04308ad0b06f6a78d715d) | ![expo=6 0079](https://ai-studio-static-online.cdn.bcebos.com/3620853d5146413dab268e600a2707e8b42f77e081344e2ea669e04af3518b9a) | ![expo=5 0079](https://ai-studio-static-online.cdn.bcebos.com/ae3f7dac197e4200adc97b2b752637b30f615459ca164ed1be506c58e0cc0c09) |
+
+**论文Fig9**
 
 ![Fig9-](https://ai-studio-static-online.cdn.bcebos.com/3aed5383003f4698a5378d067d875de697c3ce64f5a945008375319d96f8bc8f)
 
@@ -132,11 +136,6 @@ $$
 | Fig10 |![Fig10](https://ai-studio-static-online.cdn.bcebos.com/33344a7316434374b4f977d41dcb33da9a0cfab4644e40018bb69acfc3fce38e)| <img src="https://ai-studio-static-online.cdn.bcebos.com/3a1d7dd7c75e43b09ea7091bc88e059853bafcddd2b44f178456802085f2fbbf" alt="Fig10-" style="zoom:250%;" /> |
 | Fig11 |![Fig11](https://ai-studio-static-online.cdn.bcebos.com/a066fe37138e4e66ad9d3e00fa14d432262bea787b9d46b3b17d26777363f67e)|<img src="https://ai-studio-static-online.cdn.bcebos.com/bae5a16083564e3589372d63937aae6c0a73a0e521cd4a9b8bd3d49484811852" alt="Fig11-" style="zoom:250%;" />|
 
-| Model | UNet                                                         | FNO                                                          | Transformer-galerkin                                         |
-| ----- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 0079  | ![](https://ai-studio-static-online.cdn.bcebos.com/d226539ee467484cbcb3d0af0cae9a9765d2214e60b04308ad0b06f6a78d715d) | ![FNO](https://ai-studio-static-online.cdn.bcebos.com/e551ee5aac514f2bbad002d6ed5b6e6f00312b3118c7459cac0c7e7d2a10d058) | ![Trans](https://ai-studio-static-online.cdn.bcebos.com/630ffc91bedf47bb888764209b6beb6c220badb40e834ac081418524a12c9990) |
-| 0004  | ![UNet004](https://ai-studio-static-online.cdn.bcebos.com/24b1b935d83347c3b9ee8f4dc9a19e761c5ee99d366b4470a9936a5c20ed591b) | ![FNO004](https://ai-studio-static-online.cdn.bcebos.com/fbb9366b69004e22b5d268a7b7f270dbc8caea1b3c514c45b3d962bbe7b7df1e) | ![Trans004](https://ai-studio-static-online.cdn.bcebos.com/97aaefedb013417d979a1d4fd5b1aec0165d91abd7e94e96adc4e2dc00715282) |
-
 
 
 
@@ -144,11 +143,9 @@ $$
 
 FNO (Fourier Neural Operator)  
 
-参考：Fourier Neural Operator for Parametric Partial Differential Equations (http://arxiv.org/abs/2010.08895)
+reference：[Fourier Neural Operator for Parametric Partial Differential Equations](http://arxiv.org/abs/2010.08895)
 
-github：
-
-
+github：https://github.com/zongyi-li/fourier_neural_operator
 
 ![](https://ai-studio-static-online.cdn.bcebos.com/cfe9cb2617254433b78dbb6c144809e6f4b42bc85f8748cb945602e6ee424847)
 
@@ -239,18 +236,18 @@ class SpectralConv2d(nn.Layer):
 
 Garlerkin Transformer
 
-参考：Fourier Neural Operator for Parametric Partial Differential Equations (http://arxiv.org/abs/2010.08895)
+reference：[Choose a Transformer: Fourier or Galerkin](http://arxiv.org/abs/2010.08895)
 
-github：
+github：https://github.com/scaomath/galerkin-transformer
 
 
 
 ![Trans-arch](https://ai-studio-static-online.cdn.bcebos.com/5afd294cfd6447189d5c655870f2d0706a05815e03944380835c44b70008d245)
 
-| 形式     | attention计算方式                                            |
-| -------- | ------------------------------------------------------------ |
-| fourier  | ![Trans-fourier](https://ai-studio-static-online.cdn.bcebos.com/a62efc6b06d3441492c507b1c381521fe474fcf9eed94ee6b53a7c36cd24184b) |
-| galerkin | ![Trans-galerkin](https://ai-studio-static-online.cdn.bcebos.com/d23dcfa98ce34bf9a22d9a471a5bb8cf370e064dc53248fcbe0dae87b1e6c0cf) |
+| 形式     | attention计算方式                                            |      |
+| -------- | ------------------------------------------------------------ | ---- |
+| fourier  | ![Trans-fourier](https://ai-studio-static-online.cdn.bcebos.com/a62efc6b06d3441492c507b1c381521fe474fcf9eed94ee6b53a7c36cd24184b) |      |
+| galerkin | ![Trans-galerkin](https://ai-studio-static-online.cdn.bcebos.com/d23dcfa98ce34bf9a22d9a471a5bb8cf370e064dc53248fcbe0dae87b1e6c0cf) |      |
 
 
 
@@ -393,6 +390,19 @@ class SimpleAttention(nn.Layer):
         return att_output, self.attn_weight
 
 ```
+
+
+
+## 7.三种网络架构对比
+
+| Model | UNet                                                         | FNO                                                          | Transformer-galerkin                                         |
+| ----- | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 0079  | ![img](https://ai-studio-static-online.cdn.bcebos.com/d226539ee467484cbcb3d0af0cae9a9765d2214e60b04308ad0b06f6a78d715d) | ![FNO](https://ai-studio-static-online.cdn.bcebos.com/e551ee5aac514f2bbad002d6ed5b6e6f00312b3118c7459cac0c7e7d2a10d058) | ![Trans](https://ai-studio-static-online.cdn.bcebos.com/630ffc91bedf47bb888764209b6beb6c220badb40e834ac081418524a12c9990) |
+| 0004  | ![UNet004](https://ai-studio-static-online.cdn.bcebos.com/24b1b935d83347c3b9ee8f4dc9a19e761c5ee99d366b4470a9936a5c20ed591b) | ![FNO004](https://ai-studio-static-online.cdn.bcebos.com/fbb9366b69004e22b5d268a7b7f270dbc8caea1b3c514c45b3d962bbe7b7df1e) | ![Trans004](https://ai-studio-static-online.cdn.bcebos.com/97aaefedb013417d979a1d4fd5b1aec0165d91abd7e94e96adc4e2dc00715282) |
+
+
+
+![comp](https://ai-studio-static-online.cdn.bcebos.com/7ac5d8377d374209a4b89ed8b5924afdb671902e78cd48369bac660e2a0e26e9)
 
 
 
