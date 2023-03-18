@@ -107,7 +107,7 @@ class FNO2d(nn.Layer):
         super(FNO2d, self).__init__()
 
         """
-        The overall network. It contains 4 layers of the Fourier layer.
+        The overall network. It contains depth layers of the Fourier layer.
         1. Lift the input to the desire channel dimension by self.fc0 .
         2. 4 layers of the integral operators u' = (W + K)(u).
             W defined by self.w; K defined by self.conv .
