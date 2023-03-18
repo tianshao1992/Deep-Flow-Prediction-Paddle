@@ -1,8 +1,6 @@
 
 
-# Paddle Hackathon 第4期 科学计算
-
-—— 科学计算方向 51
+# Paddle Hackathon 第4期 科学计算—— 科学计算方向 203
 
 原文：[Deep Learning Methods for Reynolds-Averaged Navier-Stokes Simulations of Airfoil Flows](http://arxiv.org/abs/1810.08217)
 
@@ -52,10 +50,12 @@
       |_📁 transformer            # Results for Transformer
       |_📁 FNO				    # Results for FNO
       |_📁 UNet                   # Results for UNet utilized in original paper
+    |_📁 demo                     # 训练过程、验证结果、测试结果，仅用于查看单个demo，无法进行统计
   |_📄 run_plot.py                # 统计结果绘制
   |_📄 run_statistics.py          # 统计验证集损失、测试集误差均值、方差
   |_📄 run_train.py               # 训练过程
   |_📄 run_valid.py               # 测试过程
+  |_📄 run_demo.ipynb             # 运行训练和验证的demo
   |_📄 Trans_model.py             # 二维的Transformer 结构 paddle代码，支持多种attention机制以及两种Regressor
   |_📄 transformer_config.yml     # config for transformer galerkin, fourier, linear, softmax and so on
   |_📄 Unet_model.py              # 原文中实现的CNN-based model paddle代码
@@ -96,7 +96,7 @@ data_path = os.path.join('data')
   - **运行run_valid，获得test集合上的90个case的结果云图以及各个训练过程的test relative error**
   - **运行run_statistics，获得valid loss 和 test relative error统计结果均值及方差**
   - **运行run_plot，对所有统计结果均值及方差进行绘图，文件中给出了实验过程的统计结果文件**
-  - **考虑训练时间过久,为快速起见，可先设置sta_number=1，跑出一组查看效果**
+  - **考虑训练时间过久,为快速起见，可先设置sta_number=1，采用run_demo的jupyternotebook跑出一组查看效果，结果在demo文件夹中**
 
 - **环境依赖**
 
