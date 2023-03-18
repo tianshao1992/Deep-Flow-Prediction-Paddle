@@ -23,7 +23,7 @@ import utils
 
 ######## Settings ########
 
-# number of training iterations
+# 总体迭代步数，原文采用80k，这里采用200k，注意训练的epoch采用iterations进行运算，以避免不同训练集大小优化步数不同
 iterations = 200000
 # batch size
 batch_size = 10
@@ -31,16 +31,16 @@ batch_size = 10
 lrG = 0.0005
 # decay learning rate?
 decayLr = True
-# channel exponent to control network size
+# channel exponent to control network size，注意仅用于UNet，对FNO和Transformer不起作用
 expo = 6
-# data set config
+# data set config  第一个位置为总体样本数量，后三个数表示从reg/sup/shear三个文件夹选择的样本比例，和为1
 # prop = None  # by default, use all from "../data/train"
-prop = [10000, 1.0, 0, 0.0]  # mix data from multiple directories
+prop = [10000, 1.0, 0, 0.0]
 # save txt files with per epoch loss?
 saveL1 = True
-# model type
+# model type UNet/FNO/Transformer
 net = 'Transformer'
-# statistics number
+# statistics number  每个训练过程执行次数，以便在run_valid和run_staticstics进行统计多次的均值和方差，绘制Fig10 11
 sta_number = 10
 # data path
 data_path = os.path.join('data')
